@@ -1,15 +1,15 @@
 # simple-k8s-vlidating-webhook
 
-This is a validating kubernetes admission controller written in golang. The validation webhook is triggered for a Pod CREATE operation and will reject that operation if the label `owner` is missing from the Pod manifest. 
+This repo contains a validating kubernetes admission controller written in golang. The validation webhook is triggered for a Pod CREATE operation and will reject the operation if the label `owner` is missing from the Pod manifest. 
 
 ## Installation
 
-For quick testing, you can use `kind` or minikube cluster. I am documenting the steps with `kind`.
+I am documenting the steps with [`kind`](https://kind.sigs.k8s.io/docs/user/quick-start/). You can use any K8s cluser.
 
-- Create a K8s cluster using kind, make sure that you enable `ValidatingAdmissionWebhook`. A sample kind cluster manifest has been provided in the k8s-manifests repo.
+- Create a K8s cluster using kind, make sure that you enable `ValidatingAdmissionWebhook` plugin. A sample kind cluster manifest has been provided in the k8s-manifests repo.
 
 ```bash
-> kind create cluster --name test --config ./k8s-manifests/kind-cluster.yaml --image kindest/node:v1.20.2
+kind create cluster --name test --config ./k8s-manifests/kind-cluster.yaml --image kindest/node:v1.20.2
 ```
 
 - Generate self signed certs for quick testing (obviously this is a big NO in production environments). The webhook by default reads the cert and key from `/source/cert.pem` and `/source/key.pem` respectively. We will create a kubernetes secret that will later be mounted inside the webhook pod.
@@ -57,4 +57,4 @@ kubectl apply -f k8s-manifests/pod.yaml                                         
 Error from server: error when creating "k8s-manifests/pod.yaml": admission webhook "webhook-server.webhook-demo.svc" denied the request: Denied because the Pod is missing label owner
 ```
 
-- If add owner label to the Pod, the request will not be blocked and the Pod will be created
+- If you add owner label to the Pod, the request will not be blocked and the Pod will be created
