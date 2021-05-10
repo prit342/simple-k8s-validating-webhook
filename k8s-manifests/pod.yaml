@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox1
+  labels:
+    app: busybox1
+    ##owner: test 
+spec:
+  containers:
+  - image: busybox
+    command:
+      - sleep
+      - "36000"
+    imagePullPolicy: IfNotPresent
+    name: busybox
+  restartPolicy: Always

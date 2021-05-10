@@ -1,0 +1,1 @@
+{"kind":"AdmissionReview","apiVersion":"admission.k8s.io/v1","response":{"uid":"7ec9a43e-7c1d-4504-99a3-ebd1a753cfb0","allowed":false,"status":{"metadata":{},"message":"Denied because the Pod is missing label owner"}}}
