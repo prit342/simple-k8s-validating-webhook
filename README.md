@@ -47,7 +47,7 @@ kubectl get validatingwebhookconfigurations
 
 ## Testing
 
-- Apply the Pod.yaml that does not have the label `owner` added to to it and then you will see the request is rejected by our validating admission controller.
+- Apply the Pod.yaml that does not have the label `owner` and you will see the request is rejected by the validating admission controller.
 
 ```bash
 kubectl apply -f k8s-manifests/pod.yaml                                                                           130 ↵
