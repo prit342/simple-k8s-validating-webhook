@@ -1,8 +1,38 @@
 ---
+## should already be created in the previous steps
 apiVersion: v1
 kind: Namespace
 metadata:
   name: webhook-demo
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: webhook-demo-sa
+  namespace: webhook-demo
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  # "namespace" omitted since ClusterRoles are not namespaced
+  name: namespace-reader
+rules:
+- apiGroups: [""]
+  resources: ["namespaces"]
+  verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: webhook-demo
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: namespace-reader
+subjects:
+  - kind: ServiceAccount
+    name: webhook-demo-sa
+    namespace: webhook-demo
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -32,6 +62,7 @@ spec:
           - mountPath: "/source"
             name: webhook-certs
             readOnly: true
+      serviceAccount: webhook-demo-sa
       volumes:
         - name: webhook-certs
           secret:
