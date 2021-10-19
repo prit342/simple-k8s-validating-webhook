@@ -1,8 +1,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/fake"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -13,24 +17,33 @@ import (
 func TestHTTPRoutesUsingGetMethod(t *testing.T) {
 
 	tt := []struct {
+		name           string
 		path           string
 		wantStatusCode int
 	}{
-		{
+		{name: "test /healthcheck with GET method",
 			path:           "/healthcheck",
 			wantStatusCode: http.StatusOK,
 		},
 		{
+			name:           "test /healthz with GET method",
+			path:           "/healthz",
+			wantStatusCode: http.StatusOK,
+		},
+		{
+			name:           "test /thisdoesnotexist with GET method",
 			path:           "/thisdoesnotexist",
 			wantStatusCode: http.StatusNotFound,
 		},
 		{
+			name:           "test /validate with POST method",
 			path:           "/validate", // this exists but only POST method is allowed
 			wantStatusCode: http.StatusMethodNotAllowed,
 		},
 	}
 
 	for _, tc := range tt {
+		tc := tc
 		t.Run(fmt.Sprintf("testing route %v with HTTP GET method", tc.path), func(t *testing.T) {
 			t.Parallel()
 			app := &application{
@@ -68,12 +81,16 @@ func TestHTTPRoutesUsingGetMethod(t *testing.T) {
 
 }
 
-func TestHTTPRoutePOSTMethod(t *testing.T) {
+// TestHTTPRoutePOSTMethodValidRequest - Test with valid Pod namespace, valid Admission review object
+func TestHTTPRoutePOSTMethodValidRequest(t *testing.T) {
+
+	client := fake.NewSimpleClientset()
 
 	app := &application{
 		errorLog: log.New(ioutil.Discard, "", log.Ldate),
 		infoLog:  log.New(ioutil.Discard, "", log.Ldate),
 		cfg:      &envConfig{},
+		client:   client,
 	}
 
 	srv := httptest.NewServer(app.routes())
@@ -87,7 +104,25 @@ func TestHTTPRoutePOSTMethod(t *testing.T) {
 
 	url := fmt.Sprintf("%s/validate", srv.URL)
 
+	ns := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "webhook-demo",
+		},
+	}
+
+	ctx := context.Background()
+
+	_, err = client.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+
+	if err != nil {
+		t.Fatal("error creating namespace", err)
+	}
+
 	resp, err := http.Post(url, "application/json", f)
+
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
@@ -95,11 +130,16 @@ func TestHTTPRoutePOSTMethod(t *testing.T) {
 		}
 	}()
 
+	body, err := ioutil.ReadAll(resp.Body)
+
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	t.Log(string(body))
+
 	if resp.StatusCode != http.StatusOK {
+
 		t.Errorf("HTTP post with valid AdmissionReview failed, returned status code was not 200OK")
 	}
 

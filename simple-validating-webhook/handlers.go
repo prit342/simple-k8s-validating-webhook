@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	admissionv1 "k8s.io/api/admission/v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -14,9 +14,14 @@ import (
 func (app *application) healthcheck(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
-	fmt.Fprintf(w, "%s", `{"msg": "server is healthy"}`)
+	_, err := fmt.Fprintf(w, "%s", `{"msg": "server is healthy"}`)
+	if err != nil {
+		app.errorLog.Println("error writing response", err)
+		return
+	}
 
 }
+
 
 // Checks to see if the Kubernetes object has the correct label
 func (app *application) validate(w http.ResponseWriter, r *http.Request) {
@@ -37,24 +42,39 @@ func (app *application) validate(w http.ResponseWriter, r *http.Request) {
 	case "Pod":
 		app.infoLog.Println("Request came for object type of Pod")
 
-		pod := v1.Pod{}
+		pod := corev1.Pod{}
 
-		var requestAllowed bool = false
-		var respMsg string = "Denied because the Pod is missing label owner"
+		var requestAllowed = false
+		var respMsg = "Denied because the Pod is missing label " + app.cfg.Label
 
 		if err := json.Unmarshal(input.Request.Object.Raw, &pod); err != nil {
 			app.writeErrorMessage(w, "Unable to marshal the raw payload into Pod object: "+err.Error())
 			return
 		}
 
-		if len(pod.ObjectMeta.Labels) > 0 {
+		// checking if the annotationKey "example.com/validate" exists with a value of true
+		ok, err := app.CheckNamespaceAnnotationTrue(app.cfg.Annotation, pod.Namespace)
 
-			if val, ok := pod.ObjectMeta.Labels["owner"]; ok {
+		if err != nil {
+			app.writeErrorMessage(w, "Unable to check annotationKey on the Pod "+err.Error())
+			return
+		}
+
+		// if the annotationKey was not preset or was set to false
+		if !ok {
+			app.infoLog.Printf("skipping validation of the Pod %s in namespace %s", pod.Name, pod.Namespace)
+			requestAllowed = true
+			respMsg = "skipping validation as annotationKey " + app.cfg.Annotation + " is missing or set to false"
+		}
+
+		if ok && len(pod.ObjectMeta.Labels) > 0 {
+
+			if val, ok := pod.ObjectMeta.Labels[app.cfg.Label]; ok {
 				if val != "" {
 					requestAllowed = true
-					respMsg = "Allowed as label owner is present in the Pod"
+					respMsg = "Allowed as label " + app.cfg.Label + " is present in the Pod"
 				}
-				app.infoLog.Printf("Allowed Pod %v because label %v is present", pod.Name, "owner")
+				app.infoLog.Printf("Allowed Pod %v in namespace %v because label %v is present", pod.Name, pod.Namespace, app.cfg.Label)
 			}
 		}
 
@@ -68,6 +88,7 @@ func (app *application) validate(w http.ResponseWriter, r *http.Request) {
 				},
 			},
 		}
+
 		output.TypeMeta.Kind = input.TypeMeta.Kind
 		output.TypeMeta.APIVersion = input.TypeMeta.APIVersion
 

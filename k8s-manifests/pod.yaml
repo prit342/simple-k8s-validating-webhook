@@ -4,7 +4,7 @@ metadata:
   name: busybox1
   labels:
     app: busybox1
-    ##owner: test 
+    owner: test 
 spec:
   containers:
   - image: busybox

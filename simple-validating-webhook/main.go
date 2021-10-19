@@ -13,20 +13,6 @@ import (
 	"github.com/caarlos0/env/v6"
 )
 
-// Application holds an instance of an application
-type application struct {
-	errorLog *log.Logger
-	infoLog  *log.Logger
-	cfg      *envConfig
-}
-
-// type envConfig holds various environment variables
-type envConfig struct {
-	CertPath string `env:"CERT_PATH" envDefault:"/source/cert.pem"`
-	KeyPath  string `env:"KEY_PATH" envDefault:"/source/key.pem"`
-	Port     int    `env:"PORT" envDefault:"3000"`
-}
-
 func main() {
 
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
@@ -39,16 +25,29 @@ func main() {
 		errorLog.Fatalln(err)
 	}
 
+	config, err := GetKubeConfig()
+
+	if err != nil {
+		errorLog.Fatal(err)
+	}
+
+	client, err := NewKubeClient(config)
+
+	if err != nil {
+		errorLog.Fatal(err)
+	}
+
 	app := &application{
 		errorLog: errorLog,
 		infoLog:  infoLog,
 		cfg:      &cfg,
+		client:   client,
 	}
 
 	tlsPair, err := tls.LoadX509KeyPair(cfg.CertPath, cfg.KeyPath)
 
 	if err != nil {
-		app.errorLog.Fatalln("Error loading TLS certs", err)
+		errorLog.Fatalln("Error loading TLS certs", err)
 	}
 
 	server := &http.Server{
@@ -60,16 +59,17 @@ func main() {
 
 	go func() {
 		infoLog.Printf("Starting the web server on port %v", cfg.Port)
-		app.errorLog.Println(server.ListenAndServeTLS("", ""))
-
+		errorLog.Println(server.ListenAndServeTLS("", ""))
 	}()
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	<-sigChan
 
-	app.infoLog.Println("Got shutdown signal, shutting down the web server gracefully...")
+	app.infoLog.Println("Got shutdown signal, shutting down the web server")
 
-	server.Shutdown(context.Background())
+	if err := server.Shutdown(context.Background()); err != nil {
+		errorLog.Fatal("failed to shutdown the web server gracefully", err)
+	}
 
 }

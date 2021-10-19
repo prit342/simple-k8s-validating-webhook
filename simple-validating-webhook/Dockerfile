@@ -1,7 +1,7 @@
 FROM golang:1.16.4-alpine AS builder
-ADD . /build
-RUN apk add build-base && \
-    cd /build  && \
+COPY . /build
+WORKDIR /build
+RUN apk add --no-cache build-base && \
     go test -race -v ./... && \
     GO111MODULE=on CGO_ENABLED=0 GOOS=linux go build -tags netgo -a -v -o /webhook . && \
     ls -ltr /webhook
