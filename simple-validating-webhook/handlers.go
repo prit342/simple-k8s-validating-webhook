@@ -22,10 +22,6 @@ func (app *application) healthcheck(w http.ResponseWriter, r *http.Request) {
 
 }
 
-const (
-	annotationKey = "example.com/validate"
-	label         = "owner"
-)
 
 // Checks to see if the Kubernetes object has the correct label
 func (app *application) validate(w http.ResponseWriter, r *http.Request) {
