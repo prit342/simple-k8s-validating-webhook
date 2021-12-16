@@ -2,19 +2,22 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes/fake"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
+
+	admissionv1 "k8s.io/api/admission/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/fake"
 )
 
-func TestHTTPRoutesUsingGetMethod(t *testing.T) {
+func TestHTTPRoutesUsingCorrectHTTPMethods(t *testing.T) {
 
 	tt := []struct {
 		name           string
@@ -138,9 +141,28 @@ func TestHTTPRoutePOSTMethodValidRequest(t *testing.T) {
 
 	t.Log(string(body))
 
-	if resp.StatusCode != http.StatusOK {
+	output := &admissionv1.AdmissionReview{}
 
+	if err := json.Unmarshal(body, output); err != nil {
+		t.Fatalf("error unmarshaling response body into AdmissionReview object - %v", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
 		t.Errorf("HTTP post with valid AdmissionReview failed, returned status code was not 200OK")
+		return
+	}
+
+	if !output.Response.Allowed {
+		t.Errorf("Admission response - want=%v, got=%v", output.Response.Allowed, true)
+		return
+	}
+
+	wantMessage := "skipping validation as annotationKey  is missing or set to false"
+	gotMessage := output.Response.Result.Message
+
+	if wantMessage != gotMessage {
+		t.Errorf("Mismatch in status message - want=%q, got=%q", wantMessage, gotMessage)
+		return
 	}
 
 }
