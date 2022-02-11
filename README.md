@@ -1,6 +1,6 @@
 # simple-k8s-vlidating-webhook
 
-This repo contains a validating kubernetes admission webhook written in go.  It reads four enviroment variables:
+This repo contains a validating kubernetes admission webhook written in Go.  It reads the following enviroment variables:
 
 - CERT_PATH - default value is set to "/source/cert.pem". This is the certificate to server the TLS traffic
 - KEY_PATH" - default value is set "/source/key.pem". This is the private Key of the TLS certificate
@@ -12,8 +12,7 @@ This repo contains a validating kubernetes admission webhook written in go.  It 
 
 - The validation webhook is triggered for a Pod CREATE operation
 - The webhook checks if the namespace where the object is created has the correct annotation set. This annotation is defined by the environment variable `ANNOTATION`. The default value of this is set to `example.com/validate`.
-- If the namespace has the annotation `example.com/validate` and if the value of that annotation is set to true then the webhook will check if the label defined by the environment variable `LABEL` is present on the object.
-- If the annotation is not present or is set to false then the validation is skipped and the reason is logged
+- If the namespace has the annotation `example.com/validate` and if the value of that annotation is set to `true` then the webhook will check if the label defined by the environment variable `LABEL` is present on the object.If the annotation is not present or is set to false then the validation is skipped and the reason is logged
 
 
 
