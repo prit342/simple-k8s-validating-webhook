@@ -11,7 +11,7 @@ import (
 )
 
 func Test_application_CheckNamespaceAnnotationTrue(t *testing.T) {
-
+	
 	tests := []struct {
 		name              string
 		annotationKey     string
@@ -55,14 +55,14 @@ func Test_application_CheckNamespaceAnnotationTrue(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
+			
 			app := &application{
 				errorLog: log.New(ioutil.Discard, "", log.Ldate),
 				infoLog:  log.New(ioutil.Discard, "", log.Ldate),
 				cfg:      &envConfig{},
 				client:   fake.NewSimpleClientset(),
 			}
-
+			
 			namespace := corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: tt.namespaceName,
@@ -71,30 +71,30 @@ func Test_application_CheckNamespaceAnnotationTrue(t *testing.T) {
 					},
 				},
 			}
-
+			
 			if tt.createNameSpace {
-
+				
 				_, err := app.client.CoreV1().Namespaces().Create(context.Background(), &namespace, metav1.CreateOptions{})
-
+				
 				if err != nil {
 					t.Errorf("failed to create namespace - %v", tt.namespaceName)
 					return
 				}
 			}
-
+			
 			got, err := app.CheckNamespaceAnnotationTrue(tt.annotationToCheck, tt.namespaceName)
-
+			
 			t.Log("function call returned", got, err)
-
+			
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CheckNamespaceAnnotationTrue() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-
+			
 			if got != tt.want {
 				t.Errorf("CheckNamespaceAnnotationTrue() - return value - got= %v, want %v", got, tt.want)
 			}
-
+			
 		})
 	}
 }
