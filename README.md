@@ -1,4 +1,4 @@
-# simple-k8s-vlidating-webhook
+# simple-k8s-validating-webhook
 
 This repo contains a validating kubernetes admission webhook written in Go.  It reads the following enviroment variables:
 
