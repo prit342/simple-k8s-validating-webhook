@@ -54,7 +54,8 @@ func TestHTTPRoutesUsingCorrectHTTPMethods(t *testing.T) {
 				infoLog:  log.New(ioutil.Discard, "", log.Ldate),
 				cfg:      &envConfig{},
 			}
-			srv := httptest.NewServer(app.routes())
+			//srv := httptest.NewServer(app.routes())
+			srv := httptest.NewServer(app.setupRoutes())
 			defer srv.Close()
 			
 			res, err := http.Get(fmt.Sprintf("%s%s", srv.URL, tc.path))
@@ -96,7 +97,7 @@ func TestHTTPRoutePOSTMethodValidRequest(t *testing.T) {
 		client:   client,
 	}
 	
-	srv := httptest.NewServer(app.routes())
+	srv := httptest.NewServer(app.setupRoutes())
 	defer srv.Close()
 	
 	f, err := os.Open("test-files/invalid-request.json")
