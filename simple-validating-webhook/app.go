@@ -79,7 +79,11 @@ func NewKubeClient(config *rest.Config) (kubernetes.Interface, error) {
 // CheckNamespaceAnnotationTrue - returns true if the value of an annotationKey is present and set to true on a namespace
 func (app *application) CheckNamespaceAnnotationTrue(annotation, namespace string) (bool, error) {
 
-	ns, err := app.client.CoreV1().Namespaces().Get(context.TODO(), namespace, metav1.GetOptions{})
+	if app == nil || app.client == nil {
+		return false, fmt.Errorf("application or client is nil")
+	}
+
+	ns, err := app.client.CoreV1().Namespaces().Get(context.Background(), namespace, metav1.GetOptions{})
 
 	if err != nil {
 		nsErr := fmt.Errorf("error checking annotations on the namespace %v - %v", namespace, err)

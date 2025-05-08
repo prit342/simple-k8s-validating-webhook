@@ -4,6 +4,10 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: webhook-demo
+  annotations:
+    # this annotation is used by the webhook to determine if it should be called
+    # when creating resources in this namespace
+    'example.com/validate': "false"
 ---
 apiVersion: v1
 kind: ServiceAccount
